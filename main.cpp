@@ -39,7 +39,9 @@ void writeTnt(class Sample sam);
 void writeNex(class Sample sam);
 bool isNum(string strnum);
 string to_lower(string stri);
-string add_space (char x, string str_old);
+string add_space(char x, string str_old);
+string checktype(string str);
+int countfre(string str, char c);
 
 Sample readPhy(){
   //read file
@@ -298,6 +300,8 @@ void writePhy(class Sample sam){
 
 void writeNex(class Sample sam){
   ofstream outputFile(otn);
+  string datatype;
+  datatype = checktype(sam.chars[0]);
   if (outputFile.is_open()) {
       outputFile << "#NEXUS" << endl; 
 //      outputFile << "Begin TAXA;" << endl << "\tDimensions ntax=" << sam.ntax << ";" << endl << "\tTaxLabels";
@@ -305,7 +309,7 @@ void writeNex(class Sample sam){
 //        outputFile << " " << sam.taxas[i1];
 //      }
 //      outputFile << ";" << endl << "End;" << endl << endl;
-      outputFile << "Begin data;" << endl << "\tDimensions nchar=" << sam.nchar << " ntax=" << sam.ntax << ";" << endl << "\tFormat datatype=dna missing=? gap=-;" << endl << "\tMatrix" << endl;
+      outputFile << "Begin data;" << endl << "\tDimensions nchar=" << sam.nchar << " ntax=" << sam.ntax << ";" << endl << "\tFormat datatype=" << datatype << " missing=? gap=-;" << endl << "\tMatrix" << endl;
       for(int i2=0;i2<sam.ntax;i2++){
         outputFile << "\t\t" << sam.taxas[i2] << "\t" << sam.chars[i2] << endl;
       }
@@ -314,6 +318,38 @@ void writeNex(class Sample sam){
       cout << "File can't be written" << endl;
     }
   outputFile.close();
+}
+
+string checktype(string str){
+  float a, c, t, g, zero, one, two, dna, standard;
+  char ca='a', cc='c', ct='t', cg='g', czero='0', cone='1', ctwo='2';
+  string datatype;
+  a = countfre(str, ca);
+  c = countfre(str, cc);
+  t = countfre(str, ct);
+  g = countfre(str, cg);
+  zero = countfre(str, czero);
+  one = countfre(str, cone);
+  two = countfre(str, ctwo);
+
+  dna = a+c+t+g;
+  standard = zero+one+two;
+
+  if((dna/str.length())>0.7){
+      datatype = "dna"; 
+  } else if ((standard/str.length())>0.7){
+      datatype = "standard";
+  } else {
+      datatype = "protein";
+  }
+  return datatype;
+}
+
+int countfre(string str, char c){
+  int num;
+  str = to_lower(str);
+  num = count(str.begin(),str.end(),c); 
+  return num; 
 }
 
 void writeTnt(class Sample sam){
@@ -397,6 +433,18 @@ void write_output (class Sample sam){
   if (outype==3) writePhy(sam);
   if (outype==4) writeTnt(sam);
 }
+
+bool checkalign(class Sample sam){
+  int a=0, b=0;
+  a = sam.chars[0].length();
+  bool aligned = true;
+  for(int i=1;i<(sam.ntax-1)&&aligned;i++){
+    b = sam.chars[i].length();
+    aligned = (a==b);
+  }
+  return aligned;
+}
+
 
 int main(int argc, char **argv){
   procargs (argc, argv);
