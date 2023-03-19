@@ -30,17 +30,18 @@ void show_help(int help_num);
 Sample read_input();
 Sample readFas();
 Sample readPhy();
+Sample readTnt();
+Sample readNex();
 void write_output(class Sample sam);
 void writeFas(class Sample sam);
 void writePhy(class Sample sam);
 void writeTnt(class Sample sam);
-void writeNexus(class Sample sam);
+void writeNex(class Sample sam);
+bool isNum(string strnum);
+string to_lower(string stri);
+string add_space (char x, string str_old);
 
 Sample readPhy(){
-//  unsigned ntax, nchar;
-//  string *taxas, *chars;
-//  Sample sam(ntax, nchar); 
-  int num=0;
   //read file
   ifstream seqfile;
   seqfile.open(fn);
@@ -71,6 +72,7 @@ Sample readFas(){
   int ntax, nchar, lnum;
   ifstream seqfile;
   seqfile.open(fn);
+  // check line number and taxa number
   ntax = 0;
   string temln;
   for(lnum=0;getline(seqfile,temln);lnum++){
@@ -81,7 +83,7 @@ Sample readFas(){
   cout << "lnum= " << lnum << ", ntax= " << ntax << endl;
   seqfile.clear();
   seqfile.seekg(0);
-
+  // check the nchar
   string *str_a = new string;
   string *str_b = new string;
   int r = lnum/ntax;
@@ -96,12 +98,12 @@ Sample readFas(){
   str_a = nullptr;
   delete str_b;
   str_b = nullptr;
-
   cout << "ntax= " << ntax << ", nchar= " << nchar << endl; 
   seqfile.clear();
   seqfile.seekg(0);
-
+  // create class
   Sample sam(ntax, nchar);
+  // get class
   string *str_c = new string;
   for (int a=1, b=0;a<=lnum;a++){
     if(a%r==1){
@@ -121,17 +123,151 @@ Sample readFas(){
   delete str_c;
   str_c = nullptr; 
   seqfile.close();
-  int lennum;
-  for(lennum=0;lennum<sam.ntax;lennum++){
-   cout << "tax" << lennum << " is " << sam.taxas[lennum] << "; seq" << lennum << " is " << sam.chars[lennum] << endl;
-  }
   return sam;
 }
 
 Sample readTnt(){
   int ntax, nchar;
+  ifstream seqfile;
+  seqfile.open(fn);
+  // get nchar and ntax
+  string stri, sntax, snchar;
+  for(int i=0;i<1;){
+      getline(seqfile,stri);
+      istringstream istr(stri); 
+      istr >> snchar; istr >> sntax;
+      if(isNum(sntax) && isNum(snchar)){
+              ntax=stoi(sntax);
+	      nchar=stoi(snchar);
+	      i++;
+      }
+  }
+  // create class
   Sample sam(ntax,nchar);
+  // get class
+  int lennum;
+  for(lennum=0;lennum<sam.ntax;lennum++){
+    getline(seqfile,stri);
+    istringstream istr(stri);
+    istr >> sam.taxas[lennum]; istr >> sam.chars[lennum];
+   cout << "tax" << lennum << " is " << sam.taxas[lennum] << "; seq" << lennum << " is " << sam.chars[lennum] << endl;   
+  }
+  seqfile.close();
   return sam;
+}
+
+bool isNum(string strnum) {
+	char* p;
+	strtol(strnum.c_str(), &p, 10);
+	return *p == 0;
+}
+
+Sample readNex(){
+  int ntax, nchar;
+  // open file 
+  ifstream seqfile;
+  seqfile.open(fn);
+  // some tem 
+  string snall, stri, str_a, str_b;
+  bool found = false;
+  bool found_ntax = false;
+  bool found_nchar = false;
+  bool found_equal = false;
+  char x = '=';
+  int lnum, e, eulnum;
+  e = 0;
+  // getline line by line
+  for(lnum=0;getline(seqfile,snall);lnum++){
+  str_a = to_lower(snall);
+  str_b = add_space(x,str_a);
+  istringstream istr(str_b);
+        // convert to words
+	// e will enter the ntax/nchar function just after statisfy the `=`
+	while(istr>> stri){
+	if(stri=="dimensions"){
+		found = true;
+	} 
+	
+		if(stri=="ntax"){
+			found_ntax = true;
+		}
+		if(stri=="nchar"){
+			found_nchar = true;
+		}
+		if(stri=="="){
+			found_equal = true;
+		}
+		if (found_ntax&&found_equal){
+			e++;
+		       if(e>1){	
+			if(stri.back()==';'){
+				stri.pop_back();
+				found = false;
+			}
+			ntax = stoi(stri);
+			found_equal = false;
+			found_ntax = false;	
+			e=0;
+		       }
+		}
+		
+		if (found_nchar&&found_equal){
+			e++;
+			if(e>1){
+			if(stri.back()==';'){
+				stri.pop_back();
+				found = false;
+			} 
+			nchar = stoi(stri);
+			found_equal = false;
+			found_nchar = false;
+			e=0;
+			}
+		}
+		if(stri=="matrix"){
+			// get the position of matrix
+			eulnum = lnum+1;
+		}
+    }
+  }
+  // go back
+  seqfile.clear();
+  seqfile.seekg(0);
+  // create class
+  Sample sam(ntax,nchar);
+  // some temp, z is line number, l is the string arrary number
+  int z=0; int l=0;
+  // read line by line
+  while(getline(seqfile,snall)){
+  // convert to word
+  istringstream istr(snall);
+  // limit the read line number
+  if(z>(eulnum-1)&&z<(eulnum+sam.ntax)){
+    istr >> sam.taxas[l];
+    istr >> sam.chars[l];
+    cout << "tax" << l << " is " << sam.taxas[l] << "; seq" << l << " is " << sam.chars[l] << "; l=" << l << endl; 
+    l++;
+  }
+  z++;
+  }
+  return sam;
+}
+string add_space (char x, string str_old) {
+	int i;
+	string str_new;
+	for (i=0; i<str_old.length(); i++) {
+		if (str_old[i] != x) {
+			str_new=str_new+str_old[i];
+		} else {
+			str_new=str_new+" "+str_old[i]+" ";
+		}
+	}
+	return str_new;
+}
+
+string to_lower(string stri){
+  transform(stri.begin(),stri.end(),stri.begin(),::tolower);
+  return stri;
 }
 
 void writeFas(class Sample sam){
@@ -160,14 +296,16 @@ void writePhy(class Sample sam){
   outputFile.close();
 }
 
-void writeNexus(class Sample sam){
+void writeNex(class Sample sam){
   ofstream outputFile(otn);
   if (outputFile.is_open()) {
-      outputFile << "#NEXUS" << endl << "Begin TAXA;" << endl << "\tDimensions ntax=" << sam.ntax << ";" << endl << "\tTaxLabels";
-      for(int i1=0;i1<sam.ntax;i1++){
-        outputFile << " " << sam.taxas[i1] << endl;
-      }
-      outputFile << ";" << endl << "End;" << endl << endl << "Begin data;" << endl << "\tDimensions nchar=" << sam.nchar << ";" << endl << "\tFormat datatype=dna missing=? gap=-;" << endl << "\tMatrix" << endl;
+      outputFile << "#NEXUS" << endl; 
+//      outputFile << "Begin TAXA;" << endl << "\tDimensions ntax=" << sam.ntax << ";" << endl << "\tTaxLabels";
+//      for(int i1=0;i1<sam.ntax;i1++){
+//        outputFile << " " << sam.taxas[i1];
+//      }
+//      outputFile << ";" << endl << "End;" << endl << endl;
+      outputFile << "Begin data;" << endl << "\tDimensions nchar=" << sam.nchar << " ntax=" << sam.ntax << ";" << endl << "\tFormat datatype=dna missing=? gap=-;" << endl << "\tMatrix" << endl;
       for(int i2=0;i2<sam.ntax;i2++){
         outputFile << "\t\t" << sam.taxas[i2] << "\t" << sam.chars[i2] << endl;
       }
@@ -180,9 +318,9 @@ void writeNexus(class Sample sam){
 
 void writeTnt(class Sample sam){
   ofstream outputFile(otn);
-  if (outputFile.is_open()) {
+  if (outputFile.is_open()) { 
+      outputFile << "xread" << endl << "\' \'" << endl;
       outputFile << sam.nchar << " " << sam.ntax << endl;
-      outputFile << "\' \'" << endl;
       for(int i=0;i<sam.ntax;i++){
         outputFile << sam.taxas[i] << "\t" << sam.chars[i]  << endl;
       }
@@ -218,6 +356,7 @@ void procargs (int nargs, char ** arg){ //*arg 视为整体，是字符串指针
 	if (*cp=='f') {intype=1;  cout << "intype is fasta, " << intype << endl;}
 	if (*cp=='n') intype=2;
 	if (*cp=='p') {intype=3; cout << "intype is phylip, " << intype << endl;}
+	if (*cp=='t') {intype=4;}
 	break;
       case 'h': show_help(1); break;
       case 'i': cp++; fn = cp; break;
@@ -246,13 +385,15 @@ Sample read_input (void){
   int ntax, nchar;
   Sample sam(ntax,nchar);
   if (intype==1) sam = readFas();
+  if (intype==2) sam = readNex();
   if (intype==3) sam = readPhy();
+  if (intype==4) sam = readTnt();
   return sam;
 }
 
 void write_output (class Sample sam){
   if (outype==1) writeFas(sam);
-  if (outype==2) writeNexus(sam);
+  if (outype==2) writeNex(sam);
   if (outype==3) writePhy(sam);
   if (outype==4) writeTnt(sam);
 }
