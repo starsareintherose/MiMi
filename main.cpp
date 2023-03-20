@@ -24,7 +24,7 @@ class Sample {
   };
 };
 
-Basic_arg procargs(int nargs, char** arg, char* itn, char* otn);
+Basic_arg procargs(int nargs, char** arg);
 Sample read_input(char* itn, int intype);
 void show_help(int help_num);
 Sample readFas(char* itn);
@@ -59,7 +59,7 @@ Sample readPhy(char* itn) {
   nchar = stoi(snseq);  // string to int
   Sample sam(ntax, nchar);
   // read sequence
-  int lennum;
+  unsigned int lennum;
   for (lennum = 0; lennum < sam.ntax; lennum++) {
     getline(matrixfile, snall);
     istringstream istr(snall);
@@ -147,7 +147,7 @@ Sample readTnt(char* itn) {
   // create class
   Sample sam(ntax, nchar);
   // get class
-  int lennum;
+  unsigned int lennum;
   for (lennum = 0; lennum < sam.ntax; lennum++) {
     getline(matrixfile, stri);
     istringstream istr(stri);
@@ -171,10 +171,10 @@ Sample readNex(char* itn) {
   matrixfile.open(itn);
   // some tem
   string snall, stri, str_a, str_b;
-  bool found = false, found_ntax = false, found_nchar = false,
-       found_equal = false;
+  bool found_ntax = false, found_nchar = false, found_equal = false;
   char x = '=';
-  int lnum, eulnum;
+  int lnum;
+  unsigned int eulnum;
   // getline line by line
   for (lnum = 0; getline(matrixfile, snall); lnum++) {
     str_a = to_lower(snall);
@@ -182,9 +182,7 @@ Sample readNex(char* itn) {
     istringstream istr(str_b);
     // convert to words
     while (istr >> stri) {
-      if (stri == "dimensions") {
-        found = true;
-      } else if (stri == "ntax") {
+      if (stri == "ntax") {
         found_ntax = true;
       } else if (stri == "nchar") {
         found_nchar = true;
@@ -193,7 +191,6 @@ Sample readNex(char* itn) {
       } else if (found_ntax && found_equal) {
         if (stri.back() == ';') {
           stri.pop_back();
-          found = false;
         }
         ntax = stoi(stri);
         found_equal = false;
@@ -201,7 +198,6 @@ Sample readNex(char* itn) {
       } else if (found_nchar && found_equal) {
         if (stri.back() == ';') {
           stri.pop_back();
-          found = false;
         }
         nchar = stoi(stri);
         found_equal = false;
@@ -217,14 +213,14 @@ Sample readNex(char* itn) {
   // create class
   Sample sam(ntax, nchar);
   // some temp, z is line number, l is the string arrary number
-  int z = 0;
+  unsigned int z = 0;
   int l = 0;
   // read line by line
   while (getline(matrixfile, snall)) {
     // convert to word
     istringstream istr(snall);
     // limit the read line number
-    if (z > (eulnum - 1) && z < (eulnum + sam.ntax)) {
+    if ((z > (eulnum - 1)) && (z < (eulnum + sam.ntax))) {
       istr >> sam.taxas[l];
       istr >> sam.chars[l];
       l++;
@@ -236,7 +232,7 @@ Sample readNex(char* itn) {
 string add_space(char x, string str_old) {
   int i;
   string str_new;
-  for (i = 0; i < str_old.length(); i++) {
+  for (i = 0; i < (int)str_old.length(); i++) {
     if (str_old[i] != x) {
       str_new = str_new + str_old[i];
     } else {
@@ -253,7 +249,7 @@ string to_lower(string stri) {
 
 void writeFas(class Sample sam, char* otn) {
   ofstream matrixfile(otn);
-  for (int i = 0; i < sam.ntax; i++) {
+  for (unsigned int i = 0; i < sam.ntax; i++) {
     matrixfile << ">" << sam.taxas[i] << endl;
     matrixfile << sam.chars[i] << endl;
   }
@@ -263,7 +259,7 @@ void writeFas(class Sample sam, char* otn) {
 void writePhy(class Sample sam, char* otn) {
   ofstream matrixfile(otn);
   matrixfile << sam.ntax << " " << sam.nchar << endl;
-  for (int i = 0; i < sam.ntax; i++) {
+  for (unsigned int i = 0; i < sam.ntax; i++) {
     matrixfile << sam.taxas[i] << "\t" << sam.chars[i] << endl;
   }
   matrixfile.close();
@@ -279,7 +275,7 @@ void writeNex(class Sample sam, char* otn) {
              << ";" << endl
              << "\tFormat datatype=" << datatype << " missing=? gap=-;" << endl
              << "\tMatrix" << endl;
-  for (int i2 = 0; i2 < sam.ntax; i2++) {
+  for (unsigned int i2 = 0; i2 < sam.ntax; i2++) {
     matrixfile << "\t\t" << sam.taxas[i2] << "\t" << sam.chars[i2] << endl;
   }
   matrixfile << "\t;" << endl << "End;" << endl;
@@ -325,16 +321,17 @@ void writeTnt(class Sample sam, char* otn) {
   ofstream matrixfile(otn);
   matrixfile << "xread" << endl << "\' \'" << endl;
   matrixfile << sam.nchar << " " << sam.ntax << endl;
-  for (int i = 0; i < sam.ntax; i++) {
+  for (unsigned int i = 0; i < sam.ntax; i++) {
     matrixfile << sam.taxas[i] << "\t" << sam.chars[i] << endl;
   }
   matrixfile << "proc / ;" << endl;
   matrixfile.close();
 }
 
-Basic_arg procargs(int nargs, char** arg, char* itn, char* otn) {
+Basic_arg procargs(int nargs, char** arg) {
   int i, sta = 0, intype = 0, outype = 0;
   string para, inputfile, outputfile;
+  char *itn, *otn;
   // no arg, show help
   if (nargs == 1) {
     show_help(0);
@@ -345,28 +342,36 @@ Basic_arg procargs(int nargs, char** arg, char* itn, char* otn) {
   for (i = 1; i < nargs; i++) {
     // to string
     string para(arg[i]);
-    if (para == "-h" | para == "--help") {
+    if ((para == "-h") || (para == "--help")) {
       show_help(1);
       sta = 2;
-    } else if (para == "-i" | para == "--input") {
-      i++;
-      itn = arg[i];
-      string inputfile(arg[i]);
-      intype = checkextension(inputfile);
-      sta++;
-    } else if (para == "-o" | para == "--output") {
-      i++;
-      otn = arg[i];
-      string outputfile(arg[i]);
-      outype = checkextension(outputfile);
-      sta++;
+    } else if ((para == "-i") || (para == "--input")) {
+      if ((i + 1) < nargs) {
+        i++;
+        itn = arg[i];
+        string inputfile(arg[i]);
+        intype = checkextension(inputfile);
+        sta++;
+      } else {
+        cout << "MiMi:\tOInput file name must be defined" << endl;
+      }
+    } else if (((para == "-o") || (para == "--output"))) {
+      if ((i + 1) < nargs) {
+        i++;
+        otn = arg[i];
+        string outputfile(arg[i]);
+        outype = checkextension(outputfile);
+        sta++;
+      } else {
+        cout << "MiMi:\tOutput file name must be defined" << endl;
+      }
     } else {
-      cout << "MiMi\tUnknown arguments, please use -h to check" << endl;
+      cout << "MiMi:\tUnknown arguments, please use -h to check" << endl;
       exit(0);
     }
   }
   if (sta != 2) {
-    cout << "MiMi\tInput and Output can't be empty" << endl;
+    cout << "MiMi:\tInput and Output can't be empty" << endl;
     exit(0);
   }
   Basic_arg arguvar(intype, outype, itn, otn);
@@ -380,20 +385,20 @@ int checkextension(string str) {
   if (loc) {
     extension = str.substr(loc + 1);
   } else {
-    cout << "MiMi\tPlease sepecifc the extension name" << endl;
+    cout << "MiMi:\tPlease sepecifc the extension name" << endl;
     exit(0);
   }
   extension = to_lower(extension);
-  if (extension == "fas" | extension == "fasta") {
+  if ((extension == "fas") || (extension == "fasta")) {
     type = 1;
-  } else if (extension == "nex" | extension == "nexus") {
+  } else if ((extension == "nex") || (extension == "nexus")) {
     type = 2;
-  } else if (extension == "phy" | extension == "phylip") {
+  } else if ((extension == "phy") || (extension == "phylip")) {
     type = 3;
-  } else if (extension == "tnt" | extension == "ss") {
+  } else if ((extension == "tnt") || (extension == "ss")) {
     type = 4;
   } else {
-    cout << "MiMi\tUnknown format" << endl;
+    cout << "MiMi:\tUnknown format" << endl;
     exit(0);
   }
   return type;
@@ -420,7 +425,7 @@ void show_help(int help_num) {
 }
 
 Sample read_input(char* itn, int intype) {
-  int ntax, nchar;
+  int ntax = 0, nchar = 0;
   Sample sam(ntax, nchar);
   ifstream matrixfile;
   matrixfile.open(itn);
@@ -430,7 +435,7 @@ Sample read_input(char* itn, int intype) {
     if (intype == 3) sam = readPhy(itn);
     if (intype == 4) sam = readTnt(itn);
   } else {
-    cout << "MiMi\tInput file can't be open" << endl;
+    cout << "MiMi:\tInput file can't be open" << endl;
     exit(0);
   }
   return sam;
@@ -444,16 +449,17 @@ void write_output(class Sample sam, char* otn, int outype) {
     if (outype == 3) writePhy(sam, otn);
     if (outype == 4) writeTnt(sam, otn);
   } else {
-    cout << "MiMi\tOutput file can't be open" << endl;
+    cout << "MiMi:\tOutput file can't be open" << endl;
     exit(0);
   }
 }
 
 bool checkalign(class Sample sam) {
-  int a = 0, b = 0, x = 0;
+  int a = 0, b = 0;
+  unsigned int x = 0;
   a = sam.nchar;
   bool aligned = true;
-  for (int i = 0; i < sam.ntax; i++) {
+  for (unsigned int i = 0; i < sam.ntax; i++) {
     b = sam.chars[i].length();
     if (a == b) {
       x++;
@@ -466,8 +472,7 @@ bool checkalign(class Sample sam) {
 }
 
 int main(int argc, char** argv) {
-  char *itn, *otn;
-  Basic_arg arguvar = procargs(argc, argv, itn, otn);
+  Basic_arg arguvar = procargs(argc, argv);
   if (arguvar.intype != 0 && arguvar.outype != 0) {
     Sample sam = read_input(arguvar.itn, arguvar.intype);
     cout << "MiMi:\tInput\tfinished" << endl;
