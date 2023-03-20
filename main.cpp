@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -77,48 +78,53 @@ Sample readFas(char* itn) {
   int ntax, nchar, lnum;
   ifstream matrixfile;
   matrixfile.open(itn);
+  // use vector to read once use serveral times
+  vector<string> file_content;
   // check line number and taxa number
   ntax = 0;
   string temln;
   for (lnum = 0; getline(matrixfile, temln); lnum++) {
+    file_content.push_back(temln);
     if (temln[0] == '>') {
       ntax++;
     }
   }
-  matrixfile.clear();
-  matrixfile.seekg(0);
+  matrixfile.close();
   // check the nchar
-  string str_a, str_b;
-  int r = lnum / ntax;
+  string str_i;
+  int r;
+  if (file_content.size() != 0) {
+    r = file_content.size() / ntax;
+  } else {
+    cout << "MiMi:\tInput file contains 0 line" << endl;
+    exit(0);
+  }
   for (int i = 0; i < r; i++) {
-    getline(matrixfile, str_a);
     if (i > 0) {
-      str_b = str_b + str_a;
+      file_content[i] = del_space(file_content[i]);
+      str_i = str_i + file_content[i];
     }
   }
-  nchar = str_b.length();
-  matrixfile.clear();
-  matrixfile.seekg(0);
+  nchar = str_i.length();
   // create class
   Sample sam(ntax, nchar);
   // get class
-  string str_c;
-  for (int a = 1, b = 0; a <= lnum; a++) {
-    if (a % r == 1) {
-      getline(matrixfile, sam.taxas[b]);
+  for (int a = 0, b = 0; a < (int)file_content.size(); a++) {
+    if ((a + 1) % r == 1) {
+      sam.taxas[b] = file_content[a];
       sam.taxas[b].erase(0, 1);
+      sam.taxas[b] = rep_space(sam.taxas[b]);
     }
-    if (a % r > 1) {
-      getline(matrixfile, str_c);
-      sam.chars[b] = sam.chars[b] + str_c;
+    if ((a + 1) % r > 1) {
+      file_content[a] = del_space(file_content[a]);
+      sam.chars[b] = sam.chars[b] + file_content[a];
     }
-    if (a % r == 0) {
-      getline(matrixfile, str_c);
-      sam.chars[b] = sam.chars[b] + str_c;
+    if ((a + 1) % r == 0) {
+      file_content[a] = del_space(file_content[a]);
+      sam.chars[b] = sam.chars[b] + file_content[a];
       b++;
     }
   }
-  matrixfile.close();
   return sam;
 }
 
@@ -164,15 +170,21 @@ Sample readNex(char* itn) {
   // open file
   ifstream matrixfile;
   matrixfile.open(itn);
-  // some tem
+  // some var
   string snall, stri, str_a, str_b;
   bool found_ntax = false, found_nchar = false, found_equal = false;
   char x = '=';
+  // get line number and read line to vector
   int lnum;
   unsigned int eulnum;
+  vector<string> file_content;
+  while (getline(matrixfile, snall)) {
+    file_content.push_back(snall);
+  }
+  matrixfile.close();
   // getline line by line
-  for (lnum = 0; getline(matrixfile, snall); lnum++) {
-    str_a = to_lower(snall);
+  for (lnum = 0; lnum < (int)file_content.size(); lnum++) {
+    str_a = to_lower(file_content[lnum]);
     str_b = add_space(x, str_a);
     istringstream istr(str_b);
     // convert to words
@@ -202,25 +214,16 @@ Sample readNex(char* itn) {
       }
     }
   }
-  // go back
-  matrixfile.clear();
-  matrixfile.seekg(0);
   // create class
   Sample sam(ntax, nchar);
-  // some temp, z is line number, l is the string arrary number
-  unsigned int z = 0;
+  // read line by line, limit line number
   int l = 0;
-  // read line by line
-  while (getline(matrixfile, snall)) {
+  for (unsigned int z = eulnum; z < (eulnum + sam.ntax); z++) {
     // convert to word
-    istringstream istr(snall);
-    // limit the read line number
-    if ((z > (eulnum - 1)) && (z < (eulnum + sam.ntax))) {
-      istr >> sam.taxas[l];
-      istr >> sam.chars[l];
-      l++;
-    }
-    z++;
+    istringstream istr(file_content[z]);
+    istr >> sam.taxas[l];
+    istr >> sam.chars[l];
+    l++;
   }
   return sam;
 }
@@ -293,6 +296,7 @@ void writeNex(class Sample sam, char* otn) {
   matrixfile << "#NEXUS\nBegin data;\n\tDimensions nchar=" << sam.nchar
              << " ntax=" << sam.ntax << ";\n\tFormat datatype=" << datatype
              << " missing=? gap=-;\n\tMatrix" << endl;
+
   for (unsigned int i2 = 0; i2 < sam.ntax; i2++) {
     matrixfile << "\t\t" << sam.taxas[i2] << "\t" << sam.chars[i2] << endl;
   }
@@ -456,18 +460,14 @@ Sample read_input(char* itn, int intype) {
 void write_output(class Sample sam, char* otn, int outype) {
   ofstream matrixfile(otn);
   if (matrixfile.is_open()) {
-    for (unsigned int i = 0; i < sam.ntax; i++) {
-      sam.chars[i] = del_space(sam.chars[i]);
-      sam.taxas[i] = rep_space(sam.taxas[i]);
-    }
+    if (outype == 1) writeFas(sam, otn);
+    if (outype == 2) writeNex(sam, otn);
+    if (outype == 3) writePhy(sam, otn);
+    if (outype == 4) writeTnt(sam, otn);
   } else {
     cout << "MiMi:\tOutput file can't be open" << endl;
     exit(0);
   }
-  if (outype == 1) writeFas(sam, otn);
-  if (outype == 2) writeNex(sam, otn);
-  if (outype == 3) writePhy(sam, otn);
-  if (outype == 4) writeTnt(sam, otn);
 }
 
 bool checkalign(class Sample sam) {
