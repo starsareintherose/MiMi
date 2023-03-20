@@ -269,16 +269,13 @@ void writeNex(class Sample sam, char* otn) {
   ofstream matrixfile(otn);
   string datatype;
   datatype = checktype(sam.chars[0]);
-  matrixfile << "#NEXUS" << endl;
-  matrixfile << "Begin data;" << endl
-             << "\tDimensions nchar=" << sam.nchar << " ntax=" << sam.ntax
-             << ";" << endl
-             << "\tFormat datatype=" << datatype << " missing=? gap=-;" << endl
-             << "\tMatrix" << endl;
+  matrixfile << "#NEXUS\nBegin data;\n\tDimensions nchar=" << sam.nchar
+             << " ntax=" << sam.ntax << ";\n\tFormat datatype=" << datatype
+             << " missing=? gap=-;\n\tMatrix" << endl;
   for (unsigned int i2 = 0; i2 < sam.ntax; i2++) {
     matrixfile << "\t\t" << sam.taxas[i2] << "\t" << sam.chars[i2] << endl;
   }
-  matrixfile << "\t;" << endl << "End;" << endl;
+  matrixfile << "\t;\nEnd;" << endl;
   matrixfile.close();
 }
 
@@ -319,8 +316,7 @@ int countfre(string str, char c) {
 
 void writeTnt(class Sample sam, char* otn) {
   ofstream matrixfile(otn);
-  matrixfile << "xread" << endl << "\' \'" << endl;
-  matrixfile << sam.nchar << " " << sam.ntax << endl;
+  matrixfile << "xread\n\' \'\n" << sam.nchar << " " << sam.ntax << endl;
   for (unsigned int i = 0; i < sam.ntax; i++) {
     matrixfile << sam.taxas[i] << "\t" << sam.chars[i] << endl;
   }
@@ -410,17 +406,12 @@ void show_help(int help_num) {
          << endl;
   } else {
     cout << "\n  ／l、    \t.  . .  .\n（ﾟ､ ｡ ７    \t|\\/|*|\\/|*\n  l  ~ヽ   "
-            " \t|  |||  ||\n  じしf_,)ノ\t|  |||  ||\n"
+            " \t|  |||  ||\n  じしf_,)ノ\t|  |||  ||\n\nMorphology into "
+            "Molecules into\nGPL;\tGuoyi "
+            "Zhang;\t2023\n\nArguments:\n-h\t--help;\n-i\t--input\t\t${"
+            "filename};\n-o\t--output\t${filename};\n\nAccepted "
+            "formats:\nfas\tfasta;\nnex\tnexus;\nphy\tphylip;\ntnt\tss;"
          << endl;
-    cout << "Morphology into Molecules into\n"
-         << "GPL;\tGuoyi Zhang;\t2023\n"
-         << endl;
-    cout << "-h\t--help;\n-i\t--input\t\t${filename};\n-o\t--output\t${"
-            "filename};\n"
-         << endl;
-    cout
-        << "Accepted formats:\nfas\tfasta;\nnex\tnexus;\nphy\tphylip;\ntnt\tss;"
-        << endl;
   }
 }
 
