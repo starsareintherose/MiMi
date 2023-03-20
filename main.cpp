@@ -227,6 +227,7 @@ Sample readNex(char* itn) {
   }
   return sam;
 }
+
 string add_space(char x, string str_old) {
   int i;
   string str_new;
