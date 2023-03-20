@@ -40,6 +40,8 @@ bool isNum(string strnum);
 bool checkalign(class Sample sam);
 string to_lower(string stri);
 string add_space(char x, string str_old);
+string rep_space(string str_old);
+string del_space(string str_old);
 string checktype(string str);
 int countfre(string str, char c);
 int checkextension(string str);
@@ -86,43 +88,36 @@ Sample readFas(char* itn) {
   matrixfile.clear();
   matrixfile.seekg(0);
   // check the nchar
-  string* str_a = new string;
-  string* str_b = new string;
+  string str_a, str_b;
   int r = lnum / ntax;
   for (int i = 0; i < r; i++) {
-    getline(matrixfile, *str_a);
+    getline(matrixfile, str_a);
     if (i > 0) {
-      *str_b = *str_b + *str_a;
+      str_b = str_b + str_a;
     }
   }
-  nchar = (*str_b).length();
-  delete str_a;
-  str_a = nullptr;
-  delete str_b;
-  str_b = nullptr;
+  nchar = str_b.length();
   matrixfile.clear();
   matrixfile.seekg(0);
   // create class
   Sample sam(ntax, nchar);
   // get class
-  string* str_c = new string;
+  string str_c;
   for (int a = 1, b = 0; a <= lnum; a++) {
     if (a % r == 1) {
       getline(matrixfile, sam.taxas[b]);
       sam.taxas[b].erase(0, 1);
     }
     if (a % r > 1) {
-      getline(matrixfile, *str_c);
-      sam.chars[b] = sam.chars[b] + *str_c;
+      getline(matrixfile, str_c);
+      sam.chars[b] = sam.chars[b] + str_c;
     }
     if (a % r == 0) {
-      getline(matrixfile, *str_c);
-      sam.chars[b] = sam.chars[b] + *str_c;
+      getline(matrixfile, str_c);
+      sam.chars[b] = sam.chars[b] + str_c;
       b++;
     }
   }
-  delete str_c;
-  str_c = nullptr;
   matrixfile.close();
   return sam;
 }
@@ -237,6 +232,32 @@ string add_space(char x, string str_old) {
       str_new = str_new + str_old[i];
     } else {
       str_new = str_new + " " + str_old[i] + " ";
+    }
+  }
+  return str_new;
+}
+
+string del_space(string str_old) {
+  int i;
+  string str_new;
+  char x = ' ';
+  for (i = 0; i < (int)str_old.length(); i++) {
+    if (str_old[i] != x) {
+      str_new = str_new + str_old[i];
+    }
+  }
+  return str_new;
+}
+
+string rep_space(string str_old) {
+  int i;
+  string str_new;
+  char x = ' ', c = '_';
+  for (i = 0; i < (int)str_old.length(); i++) {
+    if (str_old[i] != x) {
+      str_new = str_new + str_old[i];
+    } else {
+      str_new = str_new + c;
     }
   }
   return str_new;
@@ -435,14 +456,18 @@ Sample read_input(char* itn, int intype) {
 void write_output(class Sample sam, char* otn, int outype) {
   ofstream matrixfile(otn);
   if (matrixfile.is_open()) {
-    if (outype == 1) writeFas(sam, otn);
-    if (outype == 2) writeNex(sam, otn);
-    if (outype == 3) writePhy(sam, otn);
-    if (outype == 4) writeTnt(sam, otn);
+    for (unsigned int i = 0; i < sam.ntax; i++) {
+      sam.chars[i] = del_space(sam.chars[i]);
+      sam.taxas[i] = rep_space(sam.taxas[i]);
+    }
   } else {
     cout << "MiMi:\tOutput file can't be open" << endl;
     exit(0);
   }
+  if (outype == 1) writeFas(sam, otn);
+  if (outype == 2) writeNex(sam, otn);
+  if (outype == 3) writePhy(sam, otn);
+  if (outype == 4) writeTnt(sam, otn);
 }
 
 bool checkalign(class Sample sam) {
