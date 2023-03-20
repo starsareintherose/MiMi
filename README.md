@@ -40,7 +40,7 @@ g++ main.cpp -o mimi
 
 ## License
 
-You should note that the license is (GPL)[https://www.gnu.org/licenses/gpl-3.0.html].
+You should note that the license is [GPL](https://www.gnu.org/licenses/gpl-3.0.html).
 
 ## Acknowledgements
 
