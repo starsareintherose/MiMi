@@ -346,7 +346,7 @@ void writeTnt(class Sample sam, char* otn) {
   for (unsigned int i = 0; i < sam.ntax; i++) {
     matrixfile << sam.taxas[i] << "\t" << sam.chars[i] << endl;
   }
-  matrixfile << "proc / ;" << endl;
+  matrixfile << "\n;\nproc / ;" << endl;
   matrixfile.close();
 }
 
